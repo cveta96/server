@@ -18,10 +18,9 @@ const registerUser = async (req, res) => {
     let userEmail = await User.findOne({ email });
     let userUsername = await User.findOne({ username });
 
-    if (userEmail)
-      return res.status(400).json({ message: 'Email already in use' });
+    if (userEmail) return res.status(400).json({ msg: 'Email already in use' });
     if (userUsername)
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ msg: 'Username already exists' });
 
     let user = new User({
       username,
@@ -57,7 +56,7 @@ const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ msg: 'Server error.' });
   }
 };
 
@@ -71,12 +70,11 @@ const loginUser = async (req, res) => {
   try {
     let user = await User.findOne({ username });
 
-    if (!user) return res.status(404).json({ message: 'Username not found.' });
+    if (!user) return res.status(404).json({ msg: 'Username not found.' });
 
     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch)
-      return res.status(401).json({ message: 'Invalid credentials.' });
+    if (!isMatch) return res.status(401).json({ msg: 'Invalid credentials.' });
 
     const payload = {
       user: {
@@ -93,7 +91,8 @@ const loginUser = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    jwt.sign(payload, accessJWT, { expiresIn: '6h' }, (err, accessToken) => {
+    //Add sameSite: 'None' secure: true,
+    jwt.sign(payload, accessJWT, { expiresIn: '10s' }, (err, accessToken) => {
       if (err) throw err;
       res.cookie('jwt', refreshToken, {
         httpOnly: true,
@@ -103,7 +102,7 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ msg: 'Server error.' });
   }
 };
 
@@ -124,12 +123,12 @@ const logoutUser = async (req, res) => {
 
     user.refreshToken = '';
     await user.save();
-
+    //Add sameSite: 'None' secure: true,
     res.clearCookie('jwt', { httpOnly: true });
     res.sendStatus(204);
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ msg: 'Server error.' });
   }
 };
 
@@ -137,33 +136,76 @@ const logoutUser = async (req, res) => {
 const refreshToken = async (req, res) => {
   const cookies = req.cookies;
 
-  if (!cookies.jwt) return res.status(401).json({ message: 'Invalid cookie.' });
+  if (!cookies.jwt) return res.status(401).json({ msg: 'Invalid cookie.' });
 
   try {
     let user = await User.findOne({ refreshToken: cookies.jwt });
 
-    if (!user) return res.status(403).json({ message: 'Forbidden.' });
+    if (!user) return res.status(403).json({ msg: 'Forbidden.' });
 
     const accessJWT = process.env.JWT_ATS;
     const refreshJWT = process.env.JWT_RTS;
 
     jwt.verify(cookies.jwt, refreshJWT, (error, decoded) => {
-      if (error || user.id !== decoded.user.id)
-        res.status(403).json({ message: 'Forbidden.' });
-      const payload = {
-        user: {
-          id: user.id,
-        },
-      };
-      const accessToken = jwt.sign(payload, accessJWT, {
-        expiresIn: '6h',
-      });
-      res.json({ accessToken });
+      if (error || user.id !== decoded.user.id) {
+        res.status(403).json({ msg: 'Forbidden.' });
+      } else {
+        const payload = {
+          user: {
+            id: user.id,
+          },
+        };
+        const accessToken = jwt.sign(payload, accessJWT, {
+          expiresIn: '6h',
+        });
+        res.json({ accessToken });
+      }
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ msg: 'Server error.' });
   }
 };
 
-export default { registerUser, loginUser, logoutUser, refreshToken };
+//Check jwt cookie and send back username
+const checkCookieToken = async (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies.jwt) return res.status(401).json({ msg: 'Invalid cookie.' });
+
+  try {
+    let user = await User.findOne({ refreshToken: cookies.jwt });
+
+    if (!user) return res.status(403).json({ msg: 'Forbidden.' });
+
+    const accessJWT = process.env.JWT_ATS;
+    const refreshJWT = process.env.JWT_RTS;
+
+    jwt.verify(cookies.jwt, refreshJWT, (error, decoded) => {
+      if (error || user.id !== decoded.user.id) {
+        res.status(403).json({ msg: 'Forbidden.' });
+      } else {
+        const payload = {
+          user: {
+            id: user.id,
+          },
+        };
+        const accessToken = jwt.sign(payload, accessJWT, {
+          expiresIn: '6h',
+        });
+        res.json({ accessToken, username: user.username });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: 'Server error.' });
+  }
+};
+
+export default {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshToken,
+  checkCookieToken,
+};

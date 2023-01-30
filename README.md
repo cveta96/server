@@ -69,16 +69,16 @@ Post request example:
 
 2. `400` status:
 
-- Body: `{"errors": [{"msg":"Invalid value","param":"{ParamWhichIsMissing}","location":"body"}]}`
+- Body: `{"errors": [{"msg":"{CustomMsg}","param":"{ParamWhichIsMissing}","location":"body"}]}`
 
 3. `401` status:
 
-- Body: `{"message":"Invalid credentials."}`
+- Body: `{msg:"Invalid credentials."}`
 
 4. `404` status:
 
-- Body: `{"message":"Username not found."}`
+- Body: `{msg:"Username not found."}`
 
 5. `500` status:
 
-- Body: `{"message":"Server error."}`
+- Body: `{msg:"Server error."}`
