@@ -92,7 +92,7 @@ const loginUser = async (req, res) => {
     await user.save();
 
     //Add sameSite: 'None' secure: true,
-    jwt.sign(payload, accessJWT, { expiresIn: '10s' }, (err, accessToken) => {
+    jwt.sign(payload, accessJWT, { expiresIn: '6h' }, (err, accessToken) => {
       if (err) throw err;
       res.cookie('jwt', refreshToken, {
         httpOnly: true,

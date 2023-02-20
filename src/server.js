@@ -7,6 +7,7 @@ import { connectDB, corsOptions } from './config';
 import { verifyJWT } from './middleware/verifyJWT';
 
 import authRoute from './routes/auth';
+import itemRoute from './routes/item';
 
 dotenv.config();
 connectDB();
@@ -27,6 +28,8 @@ app.get('/', (req, res) => {
 
 //Private routes
 app.use(verifyJWT);
+app.use('/api/item', itemRoute);
+
 app.get('/home', (req, res) => {
   res.json(req.username);
 });
