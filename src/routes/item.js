@@ -28,11 +28,11 @@ router.get(
 );
 
 // @route    PATCH api/item
-// @desc     Delete all items from user
+// @desc     Update item
 // @access   Private
 router.patch(
   '/',
-  check('userId', 'UserId is required.').notEmpty(),
+  check('itemId', 'itemId is required.').notEmpty(),
   check('name', 'Name is required.').notEmpty(),
   check('description', 'Description is required.').notEmpty(),
   check('price', 'Price is required.').isNumeric({

@@ -40,21 +40,22 @@ const updateItem = async (req, res) => {
   if (!errors.isEmpty())
     return res.status(400).json({ errors: errors.array() });
 
-  const { itemId, name, description, price, userId } = req.body;
-
+  const { itemId, name, description, price } = req.body;
+  const updatedItem = {};
+  updatedItem.name = name;
+  updatedItem.price = price;
+  updatedItem.description = description;
   try {
-    let item = await Item.find({ itemId });
-
-    if (item.length === 0)
-      return res.status(404).json({ msg: 'Item not found.' });
-
-    item.name = name;
-    item.description = description;
-    if (item.price !== price)
-      item.priceHistory.push({ price: item.price, date: Date() });
-    item.price = price;
-
-    await item.save();
+    let item = await Item.findOne({ _id: itemId });
+    if (price !== item.price) {
+      updatedItem.priceHistory = item.priceHistory;
+      updatedItem.priceHistory.push({ price: item.price, date: Date.now() });
+    }
+    item = await Item.findOneAndUpdate(
+      { _id: itemId },
+      { $set: updatedItem },
+      { new: true }
+    );
 
     res.json(item);
   } catch (error) {
